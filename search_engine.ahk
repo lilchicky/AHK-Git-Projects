@@ -86,7 +86,10 @@ class ChickySearch {
         if (!IsSet(instance))
             instance := IsSet(display) ? ChickySearch(options, title, display) : ChickySearch(options, title)
 
-        return instance.run()
+        val := instance.run()
+        WinWaitClose("ahk_id " instance.id)
+
+        return val
     }
 
     __New(options, title := "Chicky Search", display := unset) {
