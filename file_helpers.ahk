@@ -176,7 +176,7 @@ inArray(h, n, id := false) {
                 return k
             }
             if (v is Object && id) {
-                for (name, value in v) {
+                for (name, value in v.OwnProps()) {
                     if (name == n) {
                         return k
                     }
