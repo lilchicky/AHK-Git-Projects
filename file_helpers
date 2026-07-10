@@ -1,0 +1,107 @@
+createFilePath(newFile) {
+    return RegExReplace(A_LineFile, "[^\\]+$", newFile ".txt")
+}
+
+addItemToFile(item, path) {
+    fileContents := getFileContentsAsArray(path)
+
+    if (item == "")
+        return false
+
+    if (item is Object) {
+        line := ""
+
+        for (id, val in item.OwnProps()) {
+            if (id == "" || val == "")
+                return false
+        
+            line .= id ":" val (A_Index >= ObjOwnPropCount(item) ? "" : "|")
+        }
+
+        if (inArray(fileContents, line))
+            return false
+                
+        FileAppend(line "`n", path)
+        return true
+    }
+    else {
+        if (!inArray(fileContents, item)) {
+            FileAppend(item "`n", path, "`n")
+            return true
+        }
+    }
+    
+    return false
+}
+
+addListToFile(arr, path) {
+    flag := true
+    for (item in arr) {
+        flag := addItemToFile(item, path) && flag
+    }
+    return flag
+}
+
+getFileContentsAsArray(path) {
+    if (FileExist(path)) {
+        items := []
+        loop read (path) {
+            if (A_LoopReadLine != "")
+                if (!InStr(A_LoopReadLine, "|")) {
+                    items.Push(A_LoopReadLine)
+                }
+                else {
+                    sets := Object()
+                    for (item in StrSplit(A_LoopReadLine, "|")) {
+                        idset := StrSplit(item, ":")
+                        sets := sets.DefineProp(idset[1], {value:idset[2]})
+                    }
+                    items.Push(sets)
+                }
+        }
+        return items
+    }
+    else {
+        FileOpen(path, "w")
+        MsgBox("File at " path " did not exist, so it was created.")
+        return []
+    }
+}
+
+deleteFile(path) {
+    if (FileExist(path)) {
+        FileRecycle(path)
+    }
+    else {
+        MsgBox("File at " path " does not exist!")
+    }
+}
+
+deleteFileEntry(item, path) {
+    if (FileExist(path)) {
+        temp := A_Temp "\temp.txt"
+        numRemoved := 0
+
+        try FileDelete(temp)
+
+        loop read (path) {
+            if (InStr(A_LoopReadLine, item)) {
+                numRemoved++
+                continue
+            }
+
+            FileAppend(A_LoopReadLine "`n", temp)
+        }
+
+        if (InputBox("You are deleting " numRemoved " item(s) that contain `"" item "`".`n`nType DELETE to confirm.", "Are you sure?").Value == "DELETE") {
+            FileMove(temp, path, 1)
+            MsgBox("Deleted " numRemoved " values(s) that contain `"" item "`".")
+        }
+        else {
+            MsgBox("Deletion cancelled.")
+        }
+    }
+    else {
+        MsgBox("File at " path " does not exist!")
+    }
+}
