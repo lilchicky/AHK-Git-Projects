@@ -164,7 +164,7 @@ inArray(h, n) {
     if (h is Array) {
         for (k, v in h) {
             if (v == n) {
-                return true
+                return k
             }
         }
     }
