@@ -169,13 +169,13 @@ If a value is found, the index is returned. You can use this with objects by gra
 [id] (Optional, default unset): Whether [n] is an ID of an element inside an object or not. Does nothing if the array does not contain
     objects.
 */
-inArray(h, n, id := unset) {
+inArray(h, n, id := false) {
     if (h is Array) {
         for (k, v in h) {
             if (v == n) {
                 return k
             }
-            if (v is Object && IsSet(id)) {
+            if (v is Object && id) {
                 for (name, value in v) {
                     if (name == n) {
                         return k
