@@ -87,8 +87,6 @@ class ChickySearch {
             instance := IsSet(display) ? ChickySearch(options, title, display) : ChickySearch(options, title)
 
         val := instance.run()
-        WinWaitClose("ahk_id " instance.id)
-
         return val
     }
 
