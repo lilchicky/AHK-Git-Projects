@@ -156,3 +156,17 @@ deleteFileEntry(item, path) {
         MsgBox("File at " path " does not exist!")
     }
 }
+
+/*
+Searches an array for a value. Breaks early if it's found.
+*/
+inArray(h, n) {
+    if (h is Array) {
+        for (k, v in h) {
+            if (v == n) {
+                return true
+            }
+        }
+    }
+    return false
+}
