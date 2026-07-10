@@ -102,6 +102,9 @@ class ChickySearch {
         this.currentInfo := ""
         this.lastUpdate := 0
 
+        this.lastSearch := ""
+        this.lastResults := []
+
         this.loading := Gui("+AlwaysOnTop", this.title "(Loading...)")
         this.loading.MarginX := 10
         this.loading.MarginY := 10
@@ -156,7 +159,7 @@ class ChickySearch {
                 })
             }
         }
-        this.loadingInfo.Value := (this.currentInfo := "Reading options... 100%`nOptions registered!`n")
+        this.loadingInfo.Value := (this.currentInfo := "Reading options... 100%`n[" this.options.Length "] options registered!`n")
 
         this.filtered := []
         this.result := ""
@@ -202,7 +205,7 @@ class ChickySearch {
         this.window := Gui("+AlwaysOnTop", this.title)
         this.window.MarginX := 10
         this.window.MarginY := 10
-        this.id := this.window.Hwnd
+        this.id := this.window.hwnd
 
         this.search := this.window.AddEdit("w400 h28", "")
         this.instruction := this.window.AddText("w400 h15", "Enter/Double Click - Select | Esc - Cancel")
@@ -230,10 +233,21 @@ class ChickySearch {
     updateResults(*) {
         this.list.Delete()
         this.filtered := []
-
         visibleCount := 0
+        source := this.options
+        search := StrLower(this.search.Value)
+        searchChar := SubStr(search, 1, 1)
+
+        results := []
+
+        if (this.lastSearch != "" && InStr(search, this.lastSearch) == 1) {
+            source := this.lastResults
+        }
 
         if (this.search.Value == "") {
+            this.lastSearch := ""
+            this.lastResults := []
+
             for (item in this.options) {
                 if (++visibleCount > this.maxVisible)
                     break
@@ -251,12 +265,7 @@ class ChickySearch {
             return
         }
 
-        search := StrLower(this.search.Value)
-        searchChar := SubStr(search, 1, 1)
-
-        results := []
-
-        for (item in this.options) {
+        for (item in source) {
             if (!InStr(item.searchItem, searchChar))
                 continue
 
@@ -272,6 +281,15 @@ class ChickySearch {
 
         this.sortArray(results, (a, b) => b.score - a.score)
 
+        this.lastSearch := search
+        this.lastResults := []
+        for (result in results) {
+            this.lastResults.Push(result.item)
+        }
+
+        if (!WinExist("ahk_id " this.id)) 
+            return
+        
         for (result in results) {
             if (++visibleCount > this.maxVisible)
                 break
