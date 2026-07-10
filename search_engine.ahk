@@ -154,6 +154,14 @@ class ChickySearch {
                 })
             }
         }
+
+        if (this.options := []) {
+            this.options.Push({
+                item: "",
+                display: "No Entries!",
+                searchItem: ""
+            })
+        }
         this.loadingInfo.Value := (this.currentInfo := "Reading options... 100%`n[" this.options.Length "] options registered!`n")
 
         this.filtered := []
