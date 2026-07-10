@@ -166,7 +166,7 @@ If a value is found, the index is returned. You can use this with objects by gra
 
 [h]: The array to search (haystack)
 [n]: The value to look for (needle)
-[id] (Optional, default unset): The id of an element inside an object to look for. Does nothing if the array does not contain
+[id] (Optional, default unset): Whether [n] is an ID of an element inside an object or not. Does nothing if the array does not contain
     objects.
 */
 inArray(h, n, id := unset) {
@@ -177,7 +177,7 @@ inArray(h, n, id := unset) {
             }
             if (v is Object && IsSet(id)) {
                 for (name, value in v) {
-                    if (name == id) {
+                    if (name == n) {
                         return k
                     }
                 }
