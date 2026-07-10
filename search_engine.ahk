@@ -155,7 +155,7 @@ class ChickySearch {
             }
         }
 
-        if (this.options := []) {
+        if (this.options == []) {
             this.options.Push({
                 item: "",
                 display: "No Entries!",
