@@ -110,7 +110,7 @@ class ChickySearch {
 
         this.loading.Show()
 
-        if (Type(options) = "String" && FileExist(options)) {
+        if (Type(options) == "String" && FileExist(options)) {
             file := FileOpen(options, "r")
             fileSize := file.Length
 
@@ -125,8 +125,9 @@ class ChickySearch {
 
                 if (item = "")
                     continue
-
-                displayText := this.display.Call(item)
+    
+                displayText := ""
+                try displayText := this.display.Call(item)
 
                 this.options.Push({
                     item: item,
@@ -139,7 +140,8 @@ class ChickySearch {
         }
         else {
             for (item in options) {
-                displayText := this.display.Call(item)
+                displayText := ""
+                try displayText := this.display.Call(item)
 
                 if (A_TickCount - this.lastUpdate > 100) {
                     progress := A_Index / options.Length
@@ -155,13 +157,14 @@ class ChickySearch {
             }
         }
 
-        if (this.options == []) {
+        if (this.options.Length <= 0) {
             this.options.Push({
                 item: "",
-                display: "No Entries!",
+                display: "",
                 searchItem: ""
             })
         }
+
         this.loadingInfo.Value := (this.currentInfo := "Reading options... 100%`n[" this.options.Length "] options registered!`n")
 
         this.filtered := []
@@ -189,7 +192,7 @@ class ChickySearch {
     }
 
     close(*) {
-        this.result := ""
+        this.result := this.getEmptyResult()
         this.destroy()
     }
 
@@ -202,6 +205,16 @@ class ChickySearch {
         HotIfWinActive()
 
         this.window.Destroy()
+    }
+
+    getEmptyResult() {
+        if (this.options.Length > 0 && (obj := this.options[1].item) is Object) {
+            for (id, val in obj.OwnProps()) {
+                obj.DefineProp(id, {value:""})
+            }
+            return obj
+        }
+        return ""
     }
 
     createWindow() {
@@ -341,6 +354,7 @@ class ChickySearch {
             if (SubStr(item, A_Index, 1) == SubStr(search, searchPos, 1)) {
                 if (lastMatch) {
                     score -= (A_Index - lastMatch - 1) * 2
+                    score := Max(score, 1)
                 }
 
                 if (lastMatch && A_Index == lastMatch + 1) {
