@@ -6,112 +6,6 @@ Delete:: Suspend(!A_IsSuspended)
 
 #SuspendExempt false
 
-items := [
-    "garden",
-    "Garden",
-    "GARDEN",
-    "telephone",
-    "Telephone",
-    "apple",
-    "Apple",
-    "APPLE",
-    "volcano",
-    "camera",
-    "Camera",
-    "meadow",
-    "bucket",
-    "shadow",
-    "Shadow",
-    "rocket",
-    "blanket",
-    "umbrella",
-    "diamond",
-    "pocket",
-    "woodpecker",
-    "bridge",
-    "jungle",
-    "river",
-    "compass",
-    "castle",
-    "Castle",
-    "waterfall",
-    "feather",
-    "cactus",
-    "painting",
-    "snowflake",
-    "backpack",
-    "glacier",
-    "hammer",
-    "festival",
-    "window",
-    "planet",
-    "library",
-    "sunflower",
-    "strawberry",
-    "cherry",
-    "ocean",
-    "newspaper",
-    "bicycle",
-    "Bicycle",
-    "BICYCLE",
-    "lighthouse",
-    "crystal",
-    "anchor",
-    "harvest",
-    "orchard",
-    "sandwich",
-    "emerald",
-    "carpet",
-    "mountain",
-    "scissors",
-    "fireplace",
-    "ceiling",
-    "horizon",
-    "lantern",
-    "pineapple",
-    "marble",
-    "workshop",
-    "cookie",
-    "Cookie",
-    "island",
-    "fountain",
-    "balloon",
-    "dolphin",
-    "thunder",
-    "guitar",
-    "candle",
-    "rainbow",
-    "kitchen",
-    "drawer",
-    "test",
-    "Test",
-    "TEST",
-    "test2",
-    "test6",
-    "zeppelin",
-    "Zeppelin",
-    "zebra",
-    "Zebra",
-    "yellowstone",
-    "Yellowstone",
-    "blueberry",
-    "blackberry",
-    "bluebird",
-    "butterfly",
-    "buttercup",
-    "dragonfly",
-    "dragonfruit",
-    "firefly",
-    "firestorm",
-    "moonlight",
-    "moonstone",
-    "starlight",
-    "starfish",
-    "rainfall",
-    "rainforest",
-    "snowball",
-    "snowbird"
-]
 objs := [
     {name: "Garden", id: 1024, type: "Location"},
     {name: "TELEPHONE", id: 2048, type: "Device"},
@@ -182,10 +76,10 @@ objs := [
     {name: "TEST", id: 6791, type: "Debug"},
     {name: "Zeppelin", id: 7802, type: "Vehicle"}
 ]
-searchWindow := ChickySearch(items)
+searchWindow := unset
 searchWindowObj := ChickySearch(objs, , (item => item.name " (" item.type ")"))
 
-Home:: searchWindow.run()
+Home:: ChickySearch.Create(&searchWindow, "C:\Users\escar\OneDrive\Documents\AutoHotkey\AHK Git Projects\words.txt")
 +Home:: {
     if (item := searchWindowObj.run()) {
         MsgBox(item.name)
@@ -194,28 +88,87 @@ Home:: searchWindow.run()
 
 class ChickySearch {
 
+    static Create(&instance, options, title := "Chicky Search", display := unset) {
+        if (!IsSet(instance))
+            instance := IsSet(display) ? ChickySearch(options, title, display) : ChickySearch(options, title)
+
+        instance.run()
+    }
+
     __New(options, title := "Chicky Search", display := unset) {
         this.title := title
-        this.display := IsSet(display) ? display : (x => x)
-
         this.options := []
+        this.display := IsSet(display) ? display : (x => x)
+        this.currentInfo := ""
+        this.lastUpdate := 0
 
-        for (item in options) {
-            displayText := this.display.Call(item)
-            this.options.Push({
-                item: item,
-                display: displayText,
-                searchItem: StrLower(displayText)
-            })
+        this.loading := Gui("+AlwaysOnTop", this.title "(Loading...)")
+        this.loading.MarginX := 10
+        this.loading.MarginY := 10
+
+        this.loadingInfo := this.loading.AddText("w200 h150", "")
+
+        this.loadingInfo.SetFont("s10", "Segoe UI")
+
+        this.loading.Show()
+
+        if (Type(options) = "String" && FileExist(options)) {
+            file := FileOpen(options, "r")
+            fileSize := file.Length
+
+            while (!file.AtEOF) {
+                item := Trim(file.ReadLine())
+
+                if (A_TickCount - this.lastUpdate > 100) {
+                    progress := file.Pos / fileSize
+                    this.loadingInfo.Value := "Reading options... " Round(progress * 100) "%"
+                    this.lastUpdate := A_TickCount
+                }
+
+                if (item = "")
+                    continue
+
+                displayText := this.display.Call(item)
+
+                this.options.Push({
+                    item: item,
+                    display: displayText,
+                    searchItem: StrLower(displayText)
+                })
+            }
+
+            file.Close()
         }
+        else {
+            for (item in options) {
+                displayText := this.display.Call(item)
+
+                if (A_TickCount - this.lastUpdate > 100) {
+                    progress := A_Index / options.Length
+                    this.loadingInfo.Value := "Reading options... " Round(progress * 100) "%"
+                    this.lastUpdate := A_TickCount
+                }
+
+                this.options.Push({
+                    item: item,
+                    display: displayText,
+                    searchItem: StrLower(displayText)
+                })
+            }
+        }
+        this.loadingInfo.Value := (this.currentInfo := "Reading options... 100%`nOptions registered!`n")
 
         this.filtered := []
         this.result := ""
         this.maxVisible := 100
 
-        this.sortArray(this.options, (a, b) => StrCompare(a.display, b.display))
+        this.sortArray(this.options, (a, b) => StrCompare(a.display, b.display), this.loadingInfo)
+        this.loadingInfo.Value := (this.currentInfo := "Sorting options... 100%`nOptions sorted!`n")
 
         this.createWindow()
+
+        this.loading.Value := (this.currentInfo := "")
+        this.loading.Hide()
     }
 
     run() {
@@ -282,11 +235,14 @@ class ChickySearch {
 
         if (this.search.Value == "") {
             for (item in this.options) {
+                if (++visibleCount > this.maxVisible)
+                    break
+
                 this.filtered.Push(item)
                 this.list.Add(, item.display)
             }
 
-            this.status.Value := this.options.Length " entries"
+            this.status.Value := this.options.Length > this.maxVisible ? this.maxVisible "/" this.options.Length " entries" : this.options.Length " entries"
 
             if (this.list.GetCount()) {
                 this.list.Modify(1, "Select Focus")
@@ -296,10 +252,14 @@ class ChickySearch {
         }
 
         search := StrLower(this.search.Value)
+        searchChar := SubStr(search, 1, 1)
 
         results := []
 
         for (item in this.options) {
+            if (!InStr(item.searchItem, searchChar))
+                continue
+
             score := this.fuzzySearch(item.searchItem, search)
 
             if (score > 0) {
@@ -392,8 +352,16 @@ class ChickySearch {
         return score
     }
 
-    sortArray(list, compareFunc) {
+    sortArray(list, compareFunc, tracker := unset) {
         n := list.Length
+        size := 1
+        mergesDone := 0
+        totalMerges := 0
+
+        while (size < n) {
+            totalMerges += Ceil(n / (size * 2))
+            size *= 2
+        }
         size := 1
 
         while (size < n) {
@@ -405,6 +373,15 @@ class ChickySearch {
 
                 this.merge(list, left, mid, right, compareFunc)
 
+                if (IsSet(tracker) && tracker is Gui.Control) {
+                    if (A_TickCount - this.lastUpdate > 100) {
+                        progress := mergesDone / totalMerges
+                        tracker.Value := this.currentInfo "Sorting options... " Round((progress ** 10) * 100, 2) "%"
+                        this.lastUpdate := A_TickCount
+                    }
+                }
+
+                mergesDone++
                 left += size * 2
             }
 
