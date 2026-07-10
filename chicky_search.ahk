@@ -82,7 +82,7 @@ Home:: ChickySearch.Create(&searchWindow, "C:\Users\escar\OneDrive\Documents\Aut
 
 class ChickySearch {
 
-    static Create(&instance, options, title := "Chicky Search", display := unset) {
+    static Create(&instance, options, title := "Chicky Search", display := unset, initialSort := unset) {
         if (!IsSet(instance))
             instance := IsSet(display) ? ChickySearch(options, title, display) : ChickySearch(options, title)
 
@@ -90,7 +90,7 @@ class ChickySearch {
         return val
     }
 
-    __New(options, title := "Chicky Search", display := unset) {
+    __New(options, title := "Chicky Search", display := unset, initialSort := unset) {
         this.title := title
         this.options := []
         this.display := IsSet(display) ? display : (x => x)
@@ -138,7 +138,7 @@ class ChickySearch {
 
             file.Close()
         }
-        else {
+        else if (options is Array && options.Length > 0) {
             for (item in options) {
                 displayText := ""
                 try displayText := this.display.Call(item)
@@ -156,8 +156,7 @@ class ChickySearch {
                 })
             }
         }
-
-        if (this.options.Length <= 0) {
+        else {
             this.options.Push({
                 item: "",
                 display: "",
@@ -171,7 +170,7 @@ class ChickySearch {
         this.result := ""
         this.maxVisible := 100
 
-        this.sortArray(this.options, (a, b) => StrCompare(a.display, b.display), this.loadingInfo)
+        this.sortArray(this.options, IsSet(initialSort) ? initialSort : (a, b) => StrCompare(a.display, b.display), this.loadingInfo)
         this.loadingInfo.Value := (this.currentInfo := "Sorting options... 100%`nOptions sorted!`n")
 
         this.createWindow()
@@ -247,6 +246,8 @@ class ChickySearch {
     }
 
     updateResults(*) {
+        Critical(1)
+
         this.list.Delete()
         this.filtered := []
         visibleCount := 0
@@ -278,6 +279,7 @@ class ChickySearch {
                 this.list.Modify(1, "Select Focus")
             }
 
+            Critical(0)
             return
         }
 
@@ -303,8 +305,10 @@ class ChickySearch {
             this.lastResults.Push(result.item)
         }
 
-        if (!WinExist("ahk_id " this.id)) 
+        if (!WinExist("ahk_id " this.id)) {
+            Critical(0)
             return
+        }
 
         for (result in results) {
             if (++visibleCount > this.maxVisible)
@@ -319,6 +323,8 @@ class ChickySearch {
         }
 
         this.status.Value := (results.Length > 0 ? (results.Length > this.maxVisible ? this.maxVisible " out of " results.Length " matches" : results.Length " matches") : "No matches")
+    
+        Critical(0)
     }
 
     acceptSelection(*) {
