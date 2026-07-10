@@ -158,13 +158,29 @@ deleteFileEntry(item, path) {
 }
 
 /*
-Searches an array for a value. Breaks early if it's found.
+Searches an array for a value. Breaks early if it's found. You can optionally set an id if the array contains objects,
+in which case the loop will check if the array contains an object with that id. 
+
+If a value is found, the index is returned. You can use this with objects by grabbing array[k].val. If the value is not found,
+    false is returned.
+
+[h]: The array to search (haystack)
+[n]: The value to look for (needle)
+[id] (Optional, default unset): The id of an element inside an object to look for. Does nothing if the array does not contain
+    objects.
 */
-inArray(h, n) {
+inArray(h, n, id := unset) {
     if (h is Array) {
         for (k, v in h) {
             if (v == n) {
                 return k
+            }
+            if (v is Object && IsSet(id)) {
+                for (name, value in v) {
+                    if (name == id) {
+                        return k
+                    }
+                }
             }
         }
     }
