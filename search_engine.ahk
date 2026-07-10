@@ -76,15 +76,9 @@ objs := [
     {name: "TEST", id: 6791, type: "Debug"},
     {name: "Zeppelin", id: 7802, type: "Vehicle"}
 ]
-searchWindow := unset
-searchWindowObj := ChickySearch(objs, , (item => item.name " (" item.type ")"))
 
 Home:: ChickySearch.Create(&searchWindow, "C:\Users\escar\OneDrive\Documents\AutoHotkey\AHK Git Projects\words.txt")
-+Home:: {
-    if (item := searchWindowObj.run()) {
-        MsgBox(item.name)
-    }
-}
++Home:: ChickySearch.Create(&searchWindowObj, objs, , (item => item.name " (" item.type ")"))
 
 class ChickySearch {
 
@@ -92,7 +86,7 @@ class ChickySearch {
         if (!IsSet(instance))
             instance := IsSet(display) ? ChickySearch(options, title, display) : ChickySearch(options, title)
 
-        instance.run()
+        return instance.run()
     }
 
     __New(options, title := "Chicky Search", display := unset) {
@@ -180,7 +174,7 @@ class ChickySearch {
 
         this.window.Show()
 
-        WinWaitClose(this.id)
+        WinWaitClose("ahk_id " this.id)
 
         return this.result
     }
@@ -289,7 +283,7 @@ class ChickySearch {
 
         if (!WinExist("ahk_id " this.id)) 
             return
-        
+
         for (result in results) {
             if (++visibleCount > this.maxVisible)
                 break
