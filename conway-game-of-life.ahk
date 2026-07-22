@@ -65,7 +65,11 @@ class Game {
     }
 
     updateLiving() {
+        newState := []
+
         for (r, set in this.boxes) {
+            newRowState := []
+
             for (c, box in set) {
                 numAlive := 0
 
@@ -86,7 +90,15 @@ class Game {
                 numAlive += this.boxes[lowerRow][c].isAlive
                 numAlive += this.boxes[lowerRow][rightCol].isAlive
 
-                if ((!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive < 2 || numAlive > 3))) {
+                newRowState.Push((!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive < 2 || numAlive > 3)))
+            }
+
+            newState.Push(newRowState)
+        }
+
+        for (r, set in this.boxes) {
+            for (c, box in set) {
+                if (box.isAlive != newState[r][c]) {
                     box.updateColor()
                 }
             }
