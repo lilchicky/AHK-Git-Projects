@@ -20,8 +20,6 @@ class Game {
         this.row := row
         this.col := col
 
-        MsgBox("test")
-
         this.running := false
 
         this.createWindow()
@@ -49,13 +47,12 @@ class Game {
 
         loop this.row {
             rowNum := A_Index
-            loop this.row {
-                savedRow := []
-                loop this.col {
-                    savedRow.Push(Box(this.win, 20, 20, ((A_Index - 1) * 20) + 10, ((rowNum - 1) * 20) + 10))
-                }
-                this.boxes.Push(savedRow)
+            savedRow := []
+
+            loop this.col {
+                savedRow.Push(Box(this.win, 20, 20, ((A_Index - 1) * 20) + 10, ((rowNum - 1) * 20) + 10))
             }
+            this.boxes.Push(savedRow)
         }
 
         this.start := this.win.AddButton("Left", "Start/Stop")
@@ -73,19 +70,27 @@ class Game {
         for (r, set in this.boxes) {
             for (c, box in set) {
                 numAlive := 0
+                
+                upperRow := (r - 1 < 1 ? this.boxes.Length : r - 1)
+                lowerRow := (r + 1 > this.boxes.Length ? 1 : r + 1)
 
-                numAlive += this.boxes[r - 1][c - 1].isAlive
-                numAlive += this.boxes[r - 1][c].isAlive
-                numAlive += this.boxes[r - 1][c + 1].isAlive
-                numAlive += this.boxes[r][c - 1].isAlive
-                numAlive += this.boxes[r][c + 1].isAlive
-                numAlive += this.boxes[r + 1][c - 1].isAlive
-                numAlive += this.boxes[r + 1][c].isAlive
-                numAlive += this.boxes[r + 1][c + 1].isAlive
-            }
+                leftCol := (c - 1 < 1 ? set.Length : c - 1)
+                rightCol := (c + 1 > set.Length ? 1 : c + 1)
 
-            if ((!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive < 2 || numAlive > 3))) {
-                box.updateColor()
+                numAlive += this.boxes[upperRow][leftCol].isAlive
+                numAlive += this.boxes[upperRow][c].isAlive
+                numAlive += this.boxes[upperRow][rightCol].isAlive
+
+                numAlive += this.boxes[r][leftCol].isAlive
+                numAlive += this.boxes[r][rightCol].isAlive
+
+                numAlive += this.boxes[lowerRow][leftCol].isAlive
+                numAlive += this.boxes[lowerRow][c].isAlive
+                numAlive += this.boxes[lowerRow][rightCol].isAlive
+
+                if ((!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive < 2 || numAlive > 3))) {
+                    box.updateColor()
+                }
             }
         }
     }
