@@ -1,7 +1,5 @@
 #Requires AutoHotkey v2.0
 
-#Requires AutoHotkey v2.0
-
 #SuspendExempt true
 
 ^Insert:: Reload
@@ -70,7 +68,7 @@ class Game {
         for (r, set in this.boxes) {
             for (c, box in set) {
                 numAlive := 0
-                
+
                 upperRow := (r - 1 < 1 ? this.boxes.Length : r - 1)
                 lowerRow := (r + 1 > this.boxes.Length ? 1 : r + 1)
 
