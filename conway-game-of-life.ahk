@@ -1,17 +1,5 @@
 #Requires AutoHotkey v2.0
 
-#SuspendExempt true
-
-^Insert:: Reload
-^Delete:: Suspend(!A_IsSuspended)
-
-#SuspendExempt false
-
-PgUp:: {
-    gm := Game(30, 30, 20, 75)
-    gm.run()
-}
-
 class Game {
 
     __New(row, col, size, updateInterval) {
@@ -24,8 +12,14 @@ class Game {
         this.buttonHeight := 20
 
         this.randomPercent := 50
+        this.living := 0
+        this.dead := this.row * this.col
+
+        this.savedLiving := this.living
+        this.savedDead := this.dead
 
         this.updateInterval := updateInterval
+        this.iterations := 0
 
         this.running := false
 
@@ -37,6 +31,7 @@ class Game {
 
         while (WinExist("ahk_id " this.id)) {
             if(this.running) {
+                this.iterations++
                 this.updateLiving()
                 Sleep(this.updateInterval)
             }
@@ -66,19 +61,21 @@ class Game {
         row1x := this.winMargin
         row1y := (this.size * this.row) + (this.winMargin * 2)
 
-        this.start := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " BackgroundGreen" this.getUILoc(1, 2), "Start")
-        this.reset := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " Background9b9b9b" this.getUILoc(1, 3), "Reset")
+        this.start := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " BackgroundGreen" this.getUILoc(1, 1), "Start")
+        this.reset := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " Background9b9b9b" this.getUILoc(1, 2), "Reset")
         this.randomize := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " Background9b9b9b" this.getUILoc(2, 2), "Randomize")
-        this.save := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " Background9b9b9b" this.getUILoc(2, 3), "Save")
+        this.save := this.win.AddText("Center 0x1000 w" this.buttonWidth " h" this.buttonHeight " Background9b9b9b" this.getUILoc(2, 1), "Save")
+        this.stats := this.win.AddText("Left Border h45 w" this.buttonWidth * 1.5 this.getUILoc(1, 5), "Living: " this.living "`nDead: " this.dead "`nIterations: " this.iterations)
 
-        this.slider := this.win.AddSlider("ToolTip TickInterval10 w" this.buttonWidth * 2 " Range1-100" this.getUILoc(2, 4), this.randomPercent)
-        this.sliderVal := this.win.AddText("Center h24 w" this.buttonWidth * 2 this.getUILoc(1, 4), "Percent Board Randomly Filled: " this.randomPercent "%")
+        this.slider := this.win.AddSlider("ToolTip TickInterval10 w" this.buttonWidth * 2 " Range1-100" this.getUILoc(2, 3), this.randomPercent)
+        this.sliderVal := this.win.AddText("Center h24 w" this.buttonWidth * 2 this.getUILoc(1, 3), "Percent Board Randomly Filled: " this.randomPercent "%")
 
         this.start.SetFont("s10 Bold", "Segoe UI")
         this.reset.SetFont("s10 Bold", "Segoe UI")
         this.randomize.SetFont("s10 Bold", "Segoe UI")
         this.sliderVal.SetFont("s8 Bold", "Segoe UI")
         this.save.SetFont("s10 Bold", "Segoe UI")
+        this.stats.SetFont("s8 Bold", "Segoe UI")
 
         this.start.OnEvent("Click", updateStatus.Bind(this))
         this.reset.OnEvent("Click", reset.Bind(this))
@@ -101,9 +98,16 @@ class Game {
                     }
                 }
             }
+
+            this.iterations := 0
+            this.living := 0
+            this.dead := this.row * this.col
+            this.stats.Text := "Living: " this.living "`nDead: " this.dead "`nIterations: " this.iterations
         }
 
         randomizeBoard(*) {
+            this.living := 0
+
             for (set in this.boxes) {
                 for (box in set) {
                     if (box.isAlive) {
@@ -111,9 +115,14 @@ class Game {
                     }
                     if (Random() < (this.randomPercent / 100)) {
                         box.updateColor()
+                        this.living += 1
                     }
                 }
             }
+
+            this.iterations := 0
+            this.dead := (this.row * this.col) - this.living
+            this.stats.Text := "Living: " this.living "`nDead: " this.dead "`nIterations: " this.iterations
         }
 
         sliderUpdate(*) {
@@ -123,7 +132,17 @@ class Game {
 
         savePaste(*) {
             if (this.saved.Length == 0) {
-                this.saved := this.boxes
+                for (r, set in this.boxes) {
+                    savedRow := []
+                    for (c, box in set) {
+                        savedRow.Push(box.isAlive)
+                    }
+                    this.saved.Push(savedRow)
+                }
+
+                this.savedLiving := this.living
+                this.savedDead := this.dead
+
                 this.save.Text := "Paste"
                 this.save.Opt("Background5c5c5c")
                 this.save.Redraw()
@@ -135,11 +154,17 @@ class Game {
 
                 for (r, set in this.boxes) {
                     for (c, box in set) {
-                        if (box.isAlive != this.saved[r][c].isAlive) {
+                        if (box.isAlive != this.saved[r][c]) {
                             box.updateColor()
                         }
                     }
                 }
+
+                this.iterations := 0
+                this.living := this.savedLiving
+                this.dead := this.savedDead
+
+                this.stats.Text := "Living: " this.living "`nDead: " this.dead "`nIterations: " this.iterations
 
                 this.saved := []
             }
@@ -147,6 +172,7 @@ class Game {
     }
 
     updateLiving() {
+        this.living := 0
         newState := []
 
         for (r, set in this.boxes) {
@@ -172,11 +198,18 @@ class Game {
                 numAlive += this.boxes[lowerRow][c].isAlive
                 numAlive += this.boxes[lowerRow][rightCol].isAlive
 
-                newRowState.Push((!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive == 2 || numAlive == 3)))
+                newAlive := (!box.isAlive && numAlive == 3) || (box.isAlive && (numAlive == 2 || numAlive == 3))
+                this.living += newAlive
+
+                newRowState.Push(newAlive)
             }
 
             newState.Push(newRowState)
         }
+
+        this.dead := (this.row * this.col) - this.living
+
+        this.stats.Text := "Living: " this.living "`nDead: " this.dead "`nIterations: " this.iterations
 
         for (r, set in this.boxes) {
             for (c, box in set) {
